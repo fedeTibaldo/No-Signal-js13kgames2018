@@ -152,7 +152,7 @@ function imagePlugin() {
 function solidColorPlugin() {
 	let mounted = (config) => {
 		this.color = config.color;
-		this.addRenderFunction(render, 0);
+		this.addRenderFunction(render, 1);
 	}
 
 	let render = (context) => {
