@@ -204,6 +204,30 @@ function linearGradientPlugin() {
 	return { mounted };
 }
 
+function textPlugin() {
+	let mounted = (config) => {
+		this.font = config.font;
+		this.size = config.size;
+		this.text = config.text;
+		this.addRenderFunction(render, 1);
+	}
+
+	let getText = () => this.text;
+	let setText = (text) => this.text = text;
+
+	let render = (context) => {
+		let body = this.getPlugin('bodyPlugin');
+		context.font = `${this.size} ${this.font}`;
+		context.fillText(
+			this.text, 
+			body.getX() * env.gridBlockWidth, 
+			body.getY() * env.gridBlockHeight
+		);
+	}
+
+	return { mounted, getText, setText }
+}
+
 function render() {
 	for (let gameObject of gameObjects) {
 		//if (gameObject.hasPlugin('rotatePlugin')) {
@@ -407,6 +431,7 @@ registerGameObject(player);
 registerGameObject(pileStage1);
 registerGameObject(leftWall);
 registerGameObject(rightWall);
+registerGameObject(uxActionsText);
 
 fillScreen();
 window.onresize = fillScreen;
