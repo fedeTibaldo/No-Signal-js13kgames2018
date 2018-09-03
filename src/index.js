@@ -127,9 +127,7 @@ function rotatePlugin() {
 
 function imagePlugin() {
 	let mounted = (config) => {
-		let image = document.createElement('img');
-		image.src = config.image;
-		this.image = image;
+		setImage(config.image);
 		this.addRenderFunction(render, 1);
 	}
 
@@ -144,9 +142,14 @@ function imagePlugin() {
 		);
 	}
 	
-	// TODO: image getter and setter
+	let getImage = () => this.image;
+	let setImage = (imageSrc) => {
+		let image = document.createElement('img');
+		image.src = imageSrc;
+		this.image = image;
+	}
 
-	return { mounted };
+	return { mounted, getImage, setImage };
 }
 
 function solidColorPlugin() {
