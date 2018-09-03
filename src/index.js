@@ -474,7 +474,10 @@ registerGameObject(player);
 registerGameObject(pileStage1);
 registerGameObject(leftWall);
 registerGameObject(rightWall);
+<<<<<<< HEAD
 registerGameObject(uxBackgorund);
+=======
+>>>>>>> 7b55bf4b08aa8d321ad32d337c2760275efb9605
 registerGameObject(uxActionsText);
 
 fillScreen();
