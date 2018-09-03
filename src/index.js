@@ -110,19 +110,7 @@ function rotatePlugin() {
 	}
 
 	let preRender = (context) => {
-		let body = this.getPlugin('bodyPlugin')
-		let hasToUpdate = false;
-		if (typeof this.lastBodyX === 'undefined' || this.lastBodyX !== body.getX()) {
-			this.lastBodyX = body.getX();
-			hasToUpdate = true;
-		}
-		if (typeof this.lastBodyY === 'undefined' || this.lastBodyY !== body.getY()) {
-			this.lastBodyY = body.getY();
-			hasToUpdate = true;
-		}
-		if (hasToUpdate) {
-			calculateOffset();
-		}
+		calculateOffset();
 		context.translate(
 			this.translateX, 
 			this.translateY
@@ -195,8 +183,7 @@ function render() {
 }
 
 function fillScreen() {
-	canvas.width = document.documentElement.clientWidth;
-	canvas.height = document.documentElement.clientHeight;
+	canvas.width = canvas.height = document.documentElement.clientHeight;
 
 	context.webkitImageSmoothingEnabled = false;
 	context.imageSmoothingEnabled = false; /// future
