@@ -1,31 +1,43 @@
 const gulp = require('gulp');
-const compiler = require('webpack');
-const webpack = require('webpack-stream');
-const rimraf = require('rimraf');
+const tinypng = require('gulp-tinypng-compress');
+const filter = require('gulp-filter');
+const clean = require('gulp-clean');
+const fs = require('fs');
+const path = require('path');
 
-/*********** DEV TASKS ***********/
-// no minification, no transpile
-// yes watching
+gulp.task('build:clean', () =>
+	// select all the images inside the assets folder and all the files at the first directory level
+	gulp.src(['./dist/assets/*.+(png|jpg)', './dist/*.*'])
+		// filter out all the files that are present with the same name inside the source asset folder
+		.pipe(filter(function(file) {
+			return !fs.existsSync(path.resolve(__dirname + `/src/assets/${file.basename}`))
+		}))
+		// delete the remaining files
+		.pipe(clean())
+);
 
-gulp.task('dev:clear', function(done) {
-	rimraf('./dev/', done);
-});
-
-gulp.task('dev:js', () =>
+gulp.task('build:js', () =>
 	gulp.src('./src/index.js')
-		.pipe(webpack( require('./webpack.config.js') ), compiler)
-		.pipe(gulp.dest('./dev/'))
+		.pipe(gulp.dest('./dist/'))
 );
 
-gulp.task('dev:move', () => 
-	gulp.src('./src/**/*.+(svg|png|jpg)')
-		.pipe(gulp.dest('./dev/'))
+gulp.task('build:html', () => 
+	gulp.src('./src/**/*.html')
+		.pipe(gulp.dest('./dist/'))
 );
 
-gulp.task('dev', gulp.series('dev:clear', gulp.parallel('dev:move', 'dev:js')));
-
-gulp.task('dev:watch', () =>
-	gulp.watch('./src/**/*', gulp.series('dev'))
+gulp.task('build:images', () =>
+	gulp.src('./src/**/*.+(png|jpg)')
+		.pipe(tinypng({
+			key: require('./tinypng-api.json').key,
+			sigFile: './tinypng-api.json',
+			log: true
+		}))
+		.pipe(gulp.dest('./dist/'))
 );
 
-/******* end  of dev tasks *******/
+gulp.task('build', gulp.series('build:clean', gulp.parallel('build:html', 'build:js', 'build:images')));
+
+gulp.task('build:watch', () =>
+	gulp.watch('./src/**/*', gulp.series('build'))
+);

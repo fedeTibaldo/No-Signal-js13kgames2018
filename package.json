@@ -3,7 +3,7 @@
   "version": "1.0.0",
   "description": "A HTML5 game all about survival in just 13kB",
   "scripts": {
-    "test": "gulp dev:watch"
+    "test": "gulp build"
   },
   "repository": {
     "type": "git",
@@ -15,10 +15,9 @@
   },
   "homepage": "https://github.com/fedeTibaldo/No-Signal-js13kgames2018#readme",
   "devDependencies": {
-    "html-webpack-plugin": "^3.2.0",
-    "rimraf": "^2.6.2",
     "gulp": "^4.0.0",
-    "webpack": "^4.16.5",
-    "webpack-stream": "^5.1.1"
+    "gulp-clean": "^0.4.0",
+    "gulp-filter": "^5.1.0",
+    "gulp-tinypng-compress": "^1.2.1"
   }
 }
