@@ -171,6 +171,39 @@ function solidColorPlugin() {
 	return { mounted };
 }
 
+function linearGradientPlugin() {
+	let mounted = (config) => {
+		this.color1 = config.color1;
+		this.color2 = config.color2;
+		this.color1x = config.color1x;
+		this.color1y = config.color1y;
+		this.color2x = config.color2x;
+		this.color2y = config.color2y;
+		this.addRenderFunction(render, 1);
+	}
+
+	let render = (context) => {
+		let body = this.getPlugin('bodyPlugin');
+		var gradient = context.createLinearGradient(
+			this.color1x * env.gridBlockWidth,
+			this.color1y * env.gridBlockHeight,
+			this.color2x * env.gridBlockWidth,
+			this.color2y * env.gridBlockHeight
+		);
+		gradient.addColorStop(0,this.color1);
+		gradient.addColorStop(1,this.color2);
+		context.fillStyle = gradient;
+		context.fillRect(
+			body.getX() * env.gridBlockWidth, 
+			body.getY() * env.gridBlockHeight, 
+			body.getWidth() * env.gridBlockWidth, 
+			body.getHeight() * env.gridBlockHeight
+		);
+	}
+
+	return { mounted };
+}
+
 function render() {
 	for (let gameObject of gameObjects) {
 		//if (gameObject.hasPlugin('rotatePlugin')) {
@@ -343,6 +376,31 @@ let rightWall = [
 	}
 ]
 
+let sky = [
+	{
+		name: 'bodyPlugin',
+		config: {
+			// width, height and position are calculated in grid blocks
+			width: 32,
+			height: 16,
+			x: 0,
+			y: 0,
+		}
+	},
+	{
+		name: 'linearGradientPlugin',
+		config: {
+			color1: '#9cf2ff',
+			color2: '#fdffe0',
+			color1x: '0',
+			color1y: '0',
+			color2x: '25',
+			color2y: '25',
+		}
+	}
+]
+
+registerGameObject(sky)
 registerGameObject(backgroundPanel);
 registerGameObject(background);
 registerGameObject(player);
