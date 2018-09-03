@@ -2,6 +2,8 @@ const gulp = require('gulp');
 const tinypng = require('gulp-tinypng-compress');
 const filter = require('gulp-filter');
 const clean = require('gulp-clean');
+const htmlmin = require('gulp-htmlmin');
+const terser = require('gulp-terser');
 const fs = require('fs');
 const path = require('path');
 
@@ -18,11 +20,20 @@ gulp.task('build:clean', () =>
 
 gulp.task('build:js', () =>
 	gulp.src('./src/index.js')
+		.pipe(terser())
 		.pipe(gulp.dest('./dist/'))
 );
 
 gulp.task('build:html', () => 
 	gulp.src('./src/**/*.html')
+		.pipe(htmlmin({
+			minifyCSS: true,
+			collapseWhitespace: true,
+			removeAttributeQuotes: true,
+			removeComments: true,
+			removeEmptyAttributes: true,
+			useShortDoctype: true
+		}))
 		.pipe(gulp.dest('./dist/'))
 );
 
