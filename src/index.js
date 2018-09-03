@@ -127,7 +127,9 @@ function rotatePlugin() {
 
 function imagePlugin() {
 	let mounted = (config) => {
-		setImage(config.image);
+		let image = document.createElement('img');
+		image.src = config.image;
+		setImage(image);
 		this.addRenderFunction(render, 1);
 	}
 
@@ -143,13 +145,57 @@ function imagePlugin() {
 	}
 	
 	let getImage = () => this.image;
-	let setImage = (imageSrc) => {
-		let image = document.createElement('img');
-		image.src = imageSrc;
-		this.image = image;
-	}
+	let setImage = (image) => this.image = image;
 
 	return { mounted, getImage, setImage };
+}
+
+function spriteAnimationPlugin() {
+	let mounted = (config) => {
+		this.animations = {};
+		for (let animation of config.animations) {
+			this.animations[animation.name] = {
+				states: [],
+				keyframes: []
+			}
+			for (let state of animation.states) {
+				let image = document.createElement('img');
+				image.src = state;
+				this.animations[animation.name].states.push(image);
+			}
+			for (let keyframe in animation.keyframes)
+				for (let i = 0, ref = this.animations[animation.name]; i <= parseInt(keyframe); i++)
+					if (typeof ref.keyframes[i] === 'undefined')
+						ref.keyframes[i] = ref.states[animation.keyframes[keyframe]];
+			console.log(this.animations[animation.name])
+		}
+		this.currentAnimation = undefined;
+		this.counter = 0;
+		this.addRenderFunction(render, 3);
+	}
+
+	let play = (animationName) => {
+		if (typeof this.currentAnimation === 'undefined' || animationName !== this.currentAnimation) {
+			this.currentAnimation = animationName;
+			this.counter = 0;
+		}
+	}
+
+	let stop = () => {
+		this.currentAnimation = undefined;
+	}
+
+	let render = (context) => {
+		if (typeof this.currentAnimation !== 'undefined') {
+			let image = this.getPlugin('imagePlugin');
+			let animation = this.animations[this.currentAnimation];
+			image.setImage(
+				animation.keyframes[++this.counter % animation.keyframes.length]
+			);
+		}
+	}
+
+	return { mounted, play, stop };
 }
 
 function solidColorPlugin() {
@@ -238,6 +284,10 @@ function render() {
 		//	rotate.setAngle((rotate.getAngle() + 1)%360)
 		//	console.log(rotate.getAngle())
 		//}
+		//if (gameObject.hasPlugin('spriteAnimationPlugin')) {
+		//	let animation = gameObject.getPlugin('spriteAnimationPlugin')
+		//	animation.play('lookingAround')
+		//}
 		gameObject.render(context);
 	}
 }
@@ -303,7 +353,32 @@ let player = [
 	{
 		name: 'imagePlugin',
 		config: {
-			image: './assets/playerStanding_lookingInFront.png'
+			image: './assets/player_lookingInFront.png'
+		}
+	},
+	{
+		name: 'spriteAnimationPlugin',
+		config: {
+			animations: [
+				{
+					name: 'lookingAround',
+					states: [
+						'./assets/player_lookingInFront.png',
+						'./assets/player_lookingLeft.png',
+						'./assets/player_lookingRight.png'
+					],
+					keyframes: {
+						24: 0,
+						48: 1,
+						72: 2,
+						96: 0,
+						126: 2,
+						178: 0,
+						220: 1,
+						250: 1,
+					}
+				}
+			]
 		}
 	}
 ]
