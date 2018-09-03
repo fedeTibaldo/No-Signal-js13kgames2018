@@ -3,7 +3,8 @@
   "version": "1.0.0",
   "description": "A HTML5 game all about survival in just 13kB",
   "scripts": {
-    "test": "gulp build"
+	"test": "gulp build:watch",
+	"build": "gulp build"
   },
   "repository": {
     "type": "git",
@@ -20,9 +21,6 @@
     "gulp-filter": "^5.1.0",
     "gulp-terser": "^1.0.1",
     "gulp-tinypng-compress": "^1.2.1",
-    "gulp-uglify-es": "^1.0.4"
-  },
-  "dependencies": {
-    "gulp-htmlmin": "^4.0.0"
+	"gulp-htmlmin": "^4.0.0"
   }
 }
