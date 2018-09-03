@@ -204,6 +204,30 @@ function linearGradientPlugin() {
 	return { mounted };
 }
 
+function textPlugin() {
+	let mounted = (config) => {
+		this.font = config.font;
+		this.size = config.size;
+		this.text = config.text;
+		this.addRenderFunction(render, 1);
+	}
+
+	let getText = () => this.text;
+	let setText = (text) => this.text = text;
+
+	let render = (context) => {
+		let body = this.getPlugin('bodyPlugin');
+		context.font = `${this.size} ${this.font}`;
+		context.fillText(
+			this.text, 
+			body.getX() * env.gridBlockWidth, 
+			body.getY() * env.gridBlockHeight
+		);
+	}
+
+	return { mounted, getText, setText }
+}
+
 function render() {
 	for (let gameObject of gameObjects) {
 		//if (gameObject.hasPlugin('rotatePlugin')) {
@@ -400,13 +424,35 @@ let sky = [
 	}
 ]
 
-registerGameObject(sky)
+let uxActionsText = [
+	{
+		name: 'bodyPlugin',
+		config: {
+			// width, height and position are calculated in grid blocks
+			width: 1,
+			height: 1,
+			x: 1,
+			y: 1,
+		}
+	},
+	{
+		name: 'textPlugin',
+		config: {
+			font: 'sans-serif',
+			size: '18px',
+			text: 'Actions: 5 out of 5 remaining'
+		}
+	}
+]
+
+registerGameObject(sky);
 registerGameObject(backgroundPanel);
 registerGameObject(background);
 registerGameObject(player);
 registerGameObject(pileStage1);
 registerGameObject(leftWall);
 registerGameObject(rightWall);
+registerGameObject(uxActionsText);
 
 fillScreen();
 window.onresize = fillScreen;
