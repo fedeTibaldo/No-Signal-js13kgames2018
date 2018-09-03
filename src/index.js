@@ -289,7 +289,7 @@ let player = [
 			width: 3,
 			height: 6,
 			x: 13,
-			y: 32
+			y: 32 - 6
 		}
 	},
 	{
@@ -316,7 +316,7 @@ let background = [
 			width: 26,
 			height: 11,
 			x: 5,
-			y: 32 - 14,
+			y: 32 - 14 - 6,
 		}
 	},
 	{
@@ -335,7 +335,7 @@ let backgroundPanel = [
 			width: 32,
 			height: 3,
 			x: 0,
-			y: 29,
+			y: 32 - 3 - 6,
 		}
 	},
 	{
@@ -354,7 +354,7 @@ let pileStage1 = [
 			width: 8,
 			height: 9,
 			x: 17,
-			y: 32 - 9,
+			y: 32 - 9 - 6,
 		}
 	},
 	{
@@ -373,7 +373,7 @@ let leftWall = [
 			width: 8,
 			height: 13,
 			x: 0,
-			y: 32 - 13,
+			y: 32 - 13 - 6,
 		}
 	},
 	{
@@ -392,7 +392,7 @@ let rightWall = [
 			width: 9,
 			height: 15,
 			x: 32 - 9,
-			y: 32 - 15,
+			y: 32 - 15 - 6,
 		}
 	},
 	{
@@ -427,6 +427,25 @@ let sky = [
 	}
 ]
 
+let uxBackgorund = [
+	{
+		name: 'bodyPlugin',
+		config: {
+			// width, height and position are calculated in grid blocks
+			width: 32,
+			height: 6,
+			x: 0,
+			y: 32 - 6,
+		}
+	},
+	{
+		name: 'solidColorPlugin',
+		config: {
+			color: '#252120'
+		}
+	}
+]
+
 let uxActionsText = [
 	{
 		name: 'bodyPlugin',
@@ -455,6 +474,7 @@ registerGameObject(player);
 registerGameObject(pileStage1);
 registerGameObject(leftWall);
 registerGameObject(rightWall);
+registerGameObject(uxBackgorund);
 registerGameObject(uxActionsText);
 
 fillScreen();
