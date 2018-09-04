@@ -25,10 +25,11 @@ let Radon = (function(window) {
 			observers[event].push(cb)
 	}
 
-	function emit(event) {
+	function emit(event, args = undefined) {
 		if (typeof observers[event] !== 'undefined')
 			for (let cb of observers[event])
-				cb();
+				if (typeof cb !== 'undefined')
+					cb(args);
 	}
 
 	function init(gameData) {
@@ -100,15 +101,6 @@ let Radon = (function(window) {
 
 	function render() {
 		for (let gameObject of gameObjects) {
-			//if (gameObject.hasPlugin('rotatePlugin')) {
-			//	let rotate = gameObject.getPlugin('rotatePlugin')
-			//	rotate.setAngle((rotate.getAngle() + 1)%360)
-			//	console.log(rotate.getAngle())
-			//}
-			//if (gameObject.hasPlugin('spriteAnimationPlugin')) {
-			//	let animation = gameObject.getPlugin('spriteAnimationPlugin')
-			//	animation.play('lookingAround')
-			//}
 			gameObject.render(context);
 		}
 	}
@@ -140,6 +132,7 @@ let Radon = (function(window) {
 		fillScreen();
 		window.onresize = fillScreen;
 		window.onload = function() { window.requestAnimationFrame(loop); }
+		window.addEventListener('click', (e) => emit('click', e) )
 		emit('start');
 	}
 
@@ -431,7 +424,7 @@ let gameData = {
 		"spriteAnimationPlugin": {
 			animations: [
 				{
-					name: 'lookingAround',
+					name: 'idle',
 					states: [
 						'./assets/player_lookingInFront.png',
 						'./assets/player_lookingLeft.png',
@@ -444,8 +437,33 @@ let gameData = {
 						96: 0,
 						126: 2,
 						178: 0,
-						220: 1,
 						250: 1,
+					}
+				},
+				{
+					name: 'sick',
+					states: [
+						'./assets/playerSick_lookingInFront.png',
+						'./assets/playerSick_lookingLeft.png',
+						'./assets/playerSick_lookingRight.png'
+					],
+					keyframes: {
+						48: 0,
+						96: 1,
+						178: 2,
+						220: 0,
+						250: 2,
+						300: 0,
+						320: 1,
+					}
+				},
+				{
+					name: 'sleep',
+					states: [
+						'./assets/player_sleeping.png',
+					],
+					keyframes: {
+						0: 0,
 					}
 				}
 			]
@@ -460,6 +478,28 @@ let gameData = {
 		},
 		"imagePlugin": {
 			image: './assets/pileStage1.png',
+		}
+	},
+	"bag": {
+		"bodyPlugin": {
+			width: 4,
+			height: 3,
+			x: 8,
+			y: 32 - 6 - 3,
+		},
+		"imagePlugin": {
+			image: './assets/bag_closed.png',
+		}
+	},
+	"bottle": {
+		"bodyPlugin": {
+			width: 1,
+			height: 2,
+			x: 8.25,
+			y: 32 - 6 - 2,
+		},
+		"imagePlugin": {
+			image: './assets/bottle_full.png',
 		}
 	},
 	"leftWall": {
@@ -495,6 +535,72 @@ let gameData = {
 			color: '#252120',
 		}
 	},
+	"uxFrame1": {
+		"bodyPlugin": {
+			width: 4,
+			height: 4,
+			x: 0 + 1.5,
+			y: 32 - 4 - 1,
+		},
+		"solidColorPlugin": {
+			color: '#605754',
+		}
+	},
+	"uxFrame2": {
+		"bodyPlugin": {
+			width: 4,
+			height: 4,
+			x: 0 + 1.5 + 5,
+			y: 32 - 4 - 1,
+		},
+		"solidColorPlugin": {
+			color: '#605754',
+		}
+	},
+	"uxFrame3": {
+		"bodyPlugin": {
+			width: 4,
+			height: 4,
+			x: 0 + 1.5 + 5 + 5,
+			y: 32 - 4 - 1,
+		},
+		"solidColorPlugin": {
+			color: '#605754',
+		}
+	},
+	"uxFrame4": {
+		"bodyPlugin": {
+			width: 4,
+			height: 4,
+			x: 0 + 1.5 + 5 + 5 + 5,
+			y: 32 - 4 - 1,
+		},
+		"solidColorPlugin": {
+			color: '#605754',
+		}
+	},
+	"uxFrame5": {
+		"bodyPlugin": {
+			width: 4,
+			height: 4,
+			x: 0 + 1.5 + 5 + 5 + 5 + 5,
+			y: 32 - 4 - 1,
+		},
+		"solidColorPlugin": {
+			color: '#605754',
+		}
+	},
+	"uxFrame6": {
+		"bodyPlugin": {
+			width: 4,
+			height: 4,
+			x: 0 + 1.5 + 5 + 5 + 5 + 5 + 5,
+			y: 32 - 4 - 1,
+		},
+		"solidColorPlugin": {
+			color: '#605754',
+		}
+	},
 	"uxActionsText": {
 		"bodyPlugin": {
 			width: 1,
@@ -516,7 +622,7 @@ Radon.on('start', function(e) {
 	Radon
 		.getObjectByName('player')
 		.getPlugin('spriteAnimationPlugin')
-		.play('lookingAround')
+		.play('idle')
 })
 
 Radon.start();
