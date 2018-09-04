@@ -13,6 +13,24 @@ let Radon = (function(window) {
 		fps: 30,
 	}
 
+	let observers = {
+		start: [],
+		keydown: [],
+		keyup: [],
+		click: []
+	};
+
+	function on(event, cb) {
+		if (typeof observers[event] !== 'undefined')
+			observers[event].push(cb)
+	}
+
+	function emit(event) {
+		if (typeof observers[event] !== 'undefined')
+			for (let cb of observers[event])
+				cb();
+	}
+
 	function init(gameData) {
 		for (let objectName in gameData) {
 			// create a game object passing the id of the object and a subset of the Radon API
@@ -130,9 +148,10 @@ let Radon = (function(window) {
 		fillScreen();
 		window.onresize = fillScreen;
 		window.onload = function() { window.requestAnimationFrame(loop); }
+		emit('start');
 	}
 
-	return { init, start, getObjectByName }
+	return { init, start, getObjectByName, on }
 })(window);
 
 
@@ -500,5 +519,12 @@ let gameData = {
 }
 
 Radon.init(gameData);
+
+Radon.on('start', function(e) {
+	Radon
+		.getObjectByName('player')
+		.getPlugin('spriteAnimationPlugin')
+		.play('lookingAround')
+})
 
 Radon.start();
