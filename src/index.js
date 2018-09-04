@@ -18,7 +18,7 @@ let Radon = (function(window) {
 			// create a game object passing the id of the object and a subset of the Radon API
 			let gameObject = new GameObject(
 				objectName,
-				{ fetchPlugin, env }
+				{ getObjectByName, fetchPlugin, env }
 			);
 			// register plugins
 			for (let pluginName in gameData[objectName]) {
@@ -27,6 +27,10 @@ let Radon = (function(window) {
 			// store the game object
 			gameObjects.push(gameObject);
 		}
+	}
+
+	function getObjectByName(objectName) {
+		return gameObjects.find( (e) => e.name === objectName );
 	}
 
 	function fetchPlugin(pluginName) {
@@ -41,11 +45,12 @@ let Radon = (function(window) {
 	}
 
 	class GameObject {
-		constructor(id, core) {
+		constructor(name, core) {
+			this.name = name;
+			this.core = core;
 			this.pluginsNamespace = {};
 			this.plugins = {};
 			this.renderPipeline = [];
-			this.core = core;
 		}
 		addPlugin(pluginName, config) {
 			this.pluginsNamespace[pluginName] = {
@@ -127,7 +132,7 @@ let Radon = (function(window) {
 		window.onload = function() { window.requestAnimationFrame(loop); }
 	}
 
-	return { init, start }
+	return { init, start, getObjectByName }
 })(window);
 
 
