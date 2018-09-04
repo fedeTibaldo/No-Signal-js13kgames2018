@@ -136,14 +136,6 @@ let Radon = (function(window) {
 		window.requestAnimationFrame(loop);
 	}
 
-	function registerGameObject(rawGameObject) {
-		let gameObject = new GameObject(this);
-		for (let plugin of rawGameObject) {
-			gameObject.addPlugin(plugin.name, plugin.config);
-		}
-		gameObjects.push(gameObject);
-	}
-
 	function start() {
 		fillScreen();
 		window.onresize = fillScreen;
