@@ -1,53 +1,135 @@
-let canvas = document.querySelector('canvas');
-let context = canvas.getContext('2d');
+let Radon = (function(window) {
+	let canvas = window.document.querySelector('canvas');
+	let context = canvas.getContext('2d');
 
-let gameObjects = [];
-let plugins = {};
+	let gameObjects = [];
+	let plugins = {};
 
-function getPlugin(pluginName) {
-	if (typeof plugins[pluginName] !== 'undefined') {
+	let env = {
+		// gridBlockWidth: 4,
+		// gridBlockHeight: 4,
+		gridWidth: 32,
+		gridHeight: 32,
+		fps: 30,
+	}
+
+	function init(gameData) {
+		for (let objectName in gameData) {
+			// create a game object passing the id of the object and a subset of the Radon API
+			let gameObject = new GameObject(
+				objectName,
+				{ fetchPlugin, env }
+			);
+			// register plugins
+			for (let pluginName in gameData[objectName]) {
+				gameObject.addPlugin(pluginName, gameData[objectName][pluginName])
+			}
+			// store the game object
+			gameObjects.push(gameObject);
+		}
+	}
+
+	function fetchPlugin(pluginName) {
+		if (typeof plugins[pluginName] !== 'undefined') {
+			return plugins[pluginName];
+		}
+		// else actually fetch the plugin (here the process happens locally)
+		if (typeof window[pluginName] !== 'undefined') {
+			plugins[pluginName] = window[pluginName];
+		}
 		return plugins[pluginName];
 	}
-	// else actually fetch the plugin (here the process happens locally)
-	if (typeof window[pluginName] !== 'undefined') {
-		plugins[pluginName] = window[pluginName];
-	}
-	return plugins[pluginName];
-}
 
-class GameObject {
-	constructor(core) {
-		this.pluginsNamespace = {};
-		this.plugins = {};
-		this.renderPipeline = [];
-		this.core = core;
+	class GameObject {
+		constructor(id, core) {
+			this.pluginsNamespace = {};
+			this.plugins = {};
+			this.renderPipeline = [];
+			this.core = core;
+		}
+		addPlugin(pluginName, config) {
+			this.pluginsNamespace[pluginName] = {
+				getPlugin: this.getPlugin.bind(this), 
+				addRenderFunction: this.addRenderFunction.bind(this),
+				core: this.core
+			};
+			this.plugins[pluginName] = this.core.fetchPlugin(pluginName)
+				.bind(this.pluginsNamespace[pluginName]);
+			
+			this.getPlugin(pluginName).mounted(config);
+		}
+		hasPlugin(pluginName) {
+			return typeof this.plugins[pluginName] !== 'undefined';
+		}
+		getPlugin(pluginName) {
+			return this.plugins[pluginName]();
+		}
+		render(context) {
+			for (let renderer of this.renderPipeline)
+				if (typeof renderer !== 'undefined')
+					renderer(context);
+		}
+		addRenderFunction(renderer, priority) {
+			// TODO: figure out a safer way to register a render function
+			this.renderPipeline[priority] = renderer;
+		}
 	}
-	addPlugin(pluginName, config) {
-		this.pluginsNamespace[pluginName] = {
-			getPlugin: this.getPlugin.bind(this), 
-			addRenderFunction: this.addRenderFunction.bind(this)
-		};
-		this.plugins[pluginName] = this.core.getPlugin(pluginName)
-			.bind(this.pluginsNamespace[pluginName]);
-		
-		this.getPlugin(pluginName).mounted(config);
+
+	function render() {
+		for (let gameObject of gameObjects) {
+			//if (gameObject.hasPlugin('rotatePlugin')) {
+			//	let rotate = gameObject.getPlugin('rotatePlugin')
+			//	rotate.setAngle((rotate.getAngle() + 1)%360)
+			//	console.log(rotate.getAngle())
+			//}
+			//if (gameObject.hasPlugin('spriteAnimationPlugin')) {
+			//	let animation = gameObject.getPlugin('spriteAnimationPlugin')
+			//	animation.play('lookingAround')
+			//}
+			gameObject.render(context);
+		}
 	}
-	hasPlugin(pluginName) {
-		return typeof this.plugins[pluginName] !== 'undefined';
+
+	function fillScreen() {
+		canvas.width = canvas.height = document.documentElement.clientHeight;
+
+		context.webkitImageSmoothingEnabled = false;
+		context.imageSmoothingEnabled = false; /// future
+
+		// calculate real grid block size
+		// let's assume w/h is always 1
+		// then we need to fit into the smallest of the two dimensions of the canvas
+		let minDimension = Math.min(canvas.width, canvas.height); // TODO: don't read from the DOM
+		env.gridBlockWidth = env.gridBlockHeight = minDimension / env.gridWidth;
 	}
-	getPlugin(pluginName) {
-		return this.plugins[pluginName]();
+
+	let last = null
+	function loop(timestamp) {
+		if (!last) last = timestamp;
+		if (timestamp - last > 1000 / env.fps) {
+			last = timestamp;
+			render();
+		}
+		window.requestAnimationFrame(loop);
 	}
-	render(context) {
-		for (let renderer of this.renderPipeline)
-			if (typeof renderer !== 'undefined')
-				renderer(context);
+
+	function registerGameObject(rawGameObject) {
+		let gameObject = new GameObject(this);
+		for (let plugin of rawGameObject) {
+			gameObject.addPlugin(plugin.name, plugin.config);
+		}
+		gameObjects.push(gameObject);
 	}
-	addRenderFunction(renderer, priority) {
-		// TODO: figure out a safer way to register a render function
-		this.renderPipeline[priority] = renderer;
+
+	function start() {
+		fillScreen();
+		window.onresize = fillScreen;
+		window.onload = function() { window.requestAnimationFrame(loop); }
 	}
-}
+
+	return { init, start }
+})(window);
+
 
 function bodyPlugin() {
 	let mounted = (config) => {
@@ -96,8 +178,8 @@ function rotatePlugin() {
 
 	let calculateOffset = () => {
 		let body = this.getPlugin('bodyPlugin')
-		let startX = (body.getX() + this.originX) * env.gridBlockWidth;
-		let startY = (body.getY() + this.originY) * env.gridBlockHeight;
+		let startX = (body.getX() + this.originX) * this.core.env.gridBlockWidth;
+		let startY = (body.getY() + this.originY) * this.core.env.gridBlockHeight;
 		let originToStartDistance = Math.sqrt(Math.pow(startX, 2) + Math.pow(startY, 2));
 		let originToStartAngle = Math.asin(startY / originToStartDistance);
 		
@@ -137,10 +219,10 @@ function imagePlugin() {
 		let body = this.getPlugin('bodyPlugin');
 		context.drawImage(
 			this.image, 
-			body.getX() * env.gridBlockWidth, 
-			body.getY() * env.gridBlockHeight, 
-			body.getWidth() * env.gridBlockWidth, 
-			body.getHeight() * env.gridBlockHeight
+			body.getX() * this.core.env.gridBlockWidth, 
+			body.getY() * this.core.env.gridBlockHeight, 
+			body.getWidth() * this.core.env.gridBlockWidth, 
+			body.getHeight() * this.core.env.gridBlockHeight
 		);
 	}
 	
@@ -167,7 +249,6 @@ function spriteAnimationPlugin() {
 				for (let i = 0, ref = this.animations[animation.name]; i <= parseInt(keyframe); i++)
 					if (typeof ref.keyframes[i] === 'undefined')
 						ref.keyframes[i] = ref.states[animation.keyframes[keyframe]];
-			console.log(this.animations[animation.name])
 		}
 		this.currentAnimation = undefined;
 		this.counter = 0;
@@ -208,10 +289,10 @@ function solidColorPlugin() {
 		let body = this.getPlugin('bodyPlugin');
 		context.fillStyle = this.color;
 		context.fillRect(
-			body.getX() * env.gridBlockWidth, 
-			body.getY() * env.gridBlockHeight, 
-			body.getWidth() * env.gridBlockWidth, 
-			body.getHeight() * env.gridBlockHeight
+			body.getX() * this.core.env.gridBlockWidth, 
+			body.getY() * this.core.env.gridBlockHeight, 
+			body.getWidth() * this.core.env.gridBlockWidth, 
+			body.getHeight() * this.core.env.gridBlockHeight
 		);
 	}
 	
@@ -234,19 +315,19 @@ function linearGradientPlugin() {
 	let render = (context) => {
 		let body = this.getPlugin('bodyPlugin');
 		var gradient = context.createLinearGradient(
-			this.color1x * env.gridBlockWidth,
-			this.color1y * env.gridBlockHeight,
-			this.color2x * env.gridBlockWidth,
-			this.color2y * env.gridBlockHeight
+			this.color1x * this.core.env.gridBlockWidth,
+			this.color1y * this.core.env.gridBlockHeight,
+			this.color2x * this.core.env.gridBlockWidth,
+			this.color2y * this.core.env.gridBlockHeight
 		);
 		gradient.addColorStop(0,this.color1);
 		gradient.addColorStop(1,this.color2);
 		context.fillStyle = gradient;
 		context.fillRect(
-			body.getX() * env.gridBlockWidth, 
-			body.getY() * env.gridBlockHeight, 
-			body.getWidth() * env.gridBlockWidth, 
-			body.getHeight() * env.gridBlockHeight
+			body.getX() * this.core.env.gridBlockWidth, 
+			body.getY() * this.core.env.gridBlockHeight, 
+			body.getWidth() * this.core.env.gridBlockWidth, 
+			body.getHeight() * this.core.env.gridBlockHeight
 		);
 	}
 
@@ -269,96 +350,69 @@ function textPlugin() {
 		context.font = `${this.size} ${this.font}`;
 		context.fillText(
 			this.text, 
-			body.getX() * env.gridBlockWidth, 
-			body.getY() * env.gridBlockHeight
+			body.getX() * this.core.env.gridBlockWidth, 
+			body.getY() * this.core.env.gridBlockHeight
 		);
 	}
 
 	return { mounted, getText, setText }
 }
 
-function render() {
-	for (let gameObject of gameObjects) {
-		//if (gameObject.hasPlugin('rotatePlugin')) {
-		//	let rotate = gameObject.getPlugin('rotatePlugin')
-		//	rotate.setAngle((rotate.getAngle() + 1)%360)
-		//	console.log(rotate.getAngle())
-		//}
-		//if (gameObject.hasPlugin('spriteAnimationPlugin')) {
-		//	let animation = gameObject.getPlugin('spriteAnimationPlugin')
-		//	animation.play('lookingAround')
-		//}
-		gameObject.render(context);
-	}
-}
-
-function fillScreen() {
-	canvas.width = canvas.height = document.documentElement.clientHeight;
-
-	context.webkitImageSmoothingEnabled = false;
-	context.imageSmoothingEnabled = false; /// future
-
-	// calculate real grid block size
-	// let's assume w/h is always 1
-	// then we need to fit into the smallest of the two dimensions of the canvas
-	let minDimension = Math.min(canvas.width, canvas.height); // TODO: don't read from the DOM
-	env.gridBlockWidth = env.gridBlockHeight = minDimension / env.gridWidth;
-}
-
-let last = null
-function loop(timestamp) {
-	if (!last) last = timestamp;
-	if (timestamp - last > 1000 / env.fps) {
-		last = timestamp;
-		render();
-	}
-	window.requestAnimationFrame(loop);
-}
-
-function registerGameObject(rawGameObject) {
-	let gameObject = new GameObject(window);
-	for (let plugin of rawGameObject) {
-		gameObject.addPlugin(plugin.name, plugin.config);
-	}
-	gameObjects.push(gameObject);
-}
-
-let env = {
-	// gridBlockWidth: 4,
-	// gridBlockHeight: 4,
-	gridWidth: 32,
-	gridHeight: 32,
-	fps: 30,
-}
-
-let player = [
-	{
-		name: 'bodyPlugin',
-		config: {
-			// width, height and position are calculated in grid blocks
+let gameData = {
+	"sky": {
+		"bodyPlugin": {
+			width: 32,
+			height: 16,
+			x: 0,
+			y: 0,
+		},
+		"linearGradientPlugin": {
+			color1: '#9cf2ff',
+			color2: '#fdffe0',
+			color1x: '0',
+			color1y: '0',
+			color2x: '25',
+			color2y: '25',
+		}
+	},
+	"background": {
+		"bodyPlugin": {
+			width: 26,
+			height: 11,
+			x: 5,
+			y: 32 - 14 - 6,
+		},
+		"imagePlugin": {
+			image: './assets/background.png',
+		}
+	},
+	"backgroundPanel": {
+		"bodyPlugin": {
+			width: 32,
+			height: 3,
+			x: 0,
+			y: 32 - 3 - 6,
+		},
+		"solidColorPlugin": {
+			color: '#413b39',
+		}
+	},
+	"player": {
+		"bodyPlugin": {
 			width: 3,
 			height: 6,
 			x: 13,
-			y: 32 - 6
-		}
-	},
-	{
-		name: 'rotatePlugin',
-		config: {
+			y: 32 - 6,
+		},
+		"rotatePlugin": {
 			originX: 0,
 			originY: 0,
 			angle: -90,
-		}
-	},
-	{
-		name: 'imagePlugin',
-		config: {
-			image: './assets/player_lookingInFront.png'
-		}
-	},
-	{
-		name: 'spriteAnimationPlugin',
-		config: {
+		},
+		"imagePlugin": {
+			image: './assets/player_lookingInFront.png',
+		},
+		"spriteAnimationPlugin": {
 			animations: [
 				{
 					name: 'lookingAround',
@@ -380,179 +434,66 @@ let player = [
 				}
 			]
 		}
-	}
-]
-
-let background = [
-	{
-		name: 'bodyPlugin',
-		config: {
-			// width, height and position are calculated in grid blocks
-			width: 26,
-			height: 11,
-			x: 5,
-			y: 32 - 14 - 6,
-		}
 	},
-	{
-		name: 'imagePlugin',
-		config: {
-			image: './assets/background.png'
-		}
-	}
-]
-
-let backgroundPanel = [
-	{
-		name: 'bodyPlugin',
-		config: {
-			// width, height and position are calculated in grid blocks
-			width: 32,
-			height: 3,
-			x: 0,
-			y: 32 - 3 - 6,
-		}
-	},
-	{
-		name: 'solidColorPlugin',
-		config: {
-			color: '#413b39'
-		}
-	}
-]
-
-let pileStage1 = [
-	{
-		name: 'bodyPlugin',
-		config: {
-			// width, height and position are calculated in grid blocks
+	"pileStage1": {
+		"bodyPlugin": {
 			width: 8,
 			height: 9,
 			x: 17,
 			y: 32 - 9 - 6,
+		},
+		"imagePlugin": {
+			image: './assets/pileStage1.png',
 		}
 	},
-	{
-		name: 'imagePlugin',
-		config: {
-			image: './assets/pileStage1.png'
-		}
-	}
-]
-
-let leftWall = [
-	{
-		name: 'bodyPlugin',
-		config: {
-			// width, height and position are calculated in grid blocks
+	"leftWall": {
+		"bodyPlugin": {
 			width: 8,
 			height: 13,
 			x: 0,
 			y: 32 - 13 - 6,
+		},
+		"imagePlugin": {
+			image: './assets/leftWall.png',
 		}
 	},
-	{
-		name: 'imagePlugin',
-		config: {
-			image: './assets/leftWall.png'
-		}
-	}
-]
-
-let rightWall = [
-	{
-		name: 'bodyPlugin',
-		config: {
-			// width, height and position are calculated in grid blocks
+	"rightWall": {
+		"bodyPlugin": {
 			width: 9,
 			height: 15,
 			x: 32 - 9,
 			y: 32 - 15 - 6,
+		},
+		"imagePlugin": {
+			image: './assets/rightWall.png',
 		}
 	},
-	{
-		name: 'imagePlugin',
-		config: {
-			image: './assets/rightWall.png'
-		}
-	}
-]
-
-let sky = [
-	{
-		name: 'bodyPlugin',
-		config: {
-			// width, height and position are calculated in grid blocks
-			width: 32,
-			height: 16,
-			x: 0,
-			y: 0,
-		}
-	},
-	{
-		name: 'linearGradientPlugin',
-		config: {
-			color1: '#9cf2ff',
-			color2: '#fdffe0',
-			color1x: '0',
-			color1y: '0',
-			color2x: '25',
-			color2y: '25',
-		}
-	}
-]
-
-let uxBackgorund = [
-	{
-		name: 'bodyPlugin',
-		config: {
-			// width, height and position are calculated in grid blocks
+	"uxBackgorund": {
+		"bodyPlugin": {
 			width: 32,
 			height: 6,
 			x: 0,
 			y: 32 - 6,
+		},
+		"solidColorPlugin": {
+			color: '#252120',
 		}
 	},
-	{
-		name: 'solidColorPlugin',
-		config: {
-			color: '#252120'
-		}
-	}
-]
-
-let uxActionsText = [
-	{
-		name: 'bodyPlugin',
-		config: {
-			// width, height and position are calculated in grid blocks
+	"uxActionsText": {
+		"bodyPlugin": {
 			width: 1,
 			height: 1,
 			x: 1,
 			y: 1,
-		}
-	},
-	{
-		name: 'textPlugin',
-		config: {
+		},
+		"textPlugin": {
 			font: 'sans-serif',
 			size: '18px',
 			text: 'Actions: 5 out of 5 remaining'
 		}
 	}
-]
+}
 
-registerGameObject(sky);
-registerGameObject(backgroundPanel);
-registerGameObject(background);
-registerGameObject(player);
-registerGameObject(pileStage1);
-registerGameObject(leftWall);
-registerGameObject(rightWall);
-registerGameObject(uxBackgorund);
-registerGameObject(uxActionsText);
+Radon.init(gameData);
 
-fillScreen();
-window.onresize = fillScreen;
-
-window.onload = function() { window.requestAnimationFrame(loop); }
+Radon.start();
